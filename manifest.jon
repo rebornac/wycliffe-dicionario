@@ -1,22 +1,36 @@
 {
-  "name": "Wycliffe Pro",
-  "short_name": "Wycliffe",
+  "lang": "pt-BR",
+  "name": "Wycliffe Pro - Dicionário Bíblico",
+  "short_name": "Wycliffe Pro",
+  "description": "Dicionário bíblico completo com mais de 6.500 verbetes, leitura offline e referências bíblicas instantâneas.",
+  "id": "/wycliffe-pro/",
   "start_url": "app/index.html",
   "display": "standalone",
+  "orientation": "any",
   "background_color": "#1a2a3a",
   "theme_color": "#1a2a3a",
+  "scope": "/wycliffe-pro/",
   "icons": [
     {
-      "src": "../icon.png",
+      "src": "icon.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any"
+      "purpose": "any maskable"
     },
     {
-      "src": "../icon.png",
+      "src": "icon.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Tela inicial do Dicionário Wycliffe"
     }
   ]
 }
