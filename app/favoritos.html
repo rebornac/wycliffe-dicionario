@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Favoritos - Wycliffe Pro</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=Merriweather:wght@700&display=swap" rel="stylesheet">
+    <style>
+        :root { --primary: #1a2a3a; --accent: #c0392b; --bg: #f4f7f6; --card: #fff; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); margin: 0; padding: 20px; color: #2c3e50; }
+        .container { max-width: 550px; margin: 0 auto; padding-bottom: 80px; }
+        h1 { font-family: 'Merriweather', serif; color: var(--primary); margin-bottom: 25px; display: flex; align-items: center; gap: 10px; }
+        .item-fav { background: var(--card); padding: 20px; border-radius: 15px; margin-bottom: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.03); cursor: pointer; border: 1px solid rgba(0,0,0,0.05); position: relative; transition: 0.2s; }
+        .item-fav:hover { transform: translateY(-2px); box-shadow: 0 6px 15px rgba(0,0,0,0.08); }
+        .item-fav h3 { margin: 0; color: var(--primary); text-transform: uppercase; font-size: 1.1rem; }
+        .item-fav p { margin: 8px 0 0; font-size: 0.85rem; color: #777; line-height: 1.4; }
+        .empty-state { text-align: center; margin-top: 50px; color: #999; }
+        .nav-footer { position: fixed; bottom: 0; left: 0; width: 100%; background: white; display: flex; justify-content: space-around; padding: 18px 0; box-shadow: 0 -5px 20px rgba(0,0,0,0.05); border-radius: 20px 20px 0 0; }
+        .nav-footer a { text-decoration: none; color: #999; font-weight: bold; font-size: 0.85rem; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>⭐ Favoritos</h1>
+    <div id="lista-favoritos">
+        <p style="text-align:center; color:#999;">A carregar os seus estudos...</p>
+    </div>
+</div>
+
+<nav class="nav-footer">
+    <a href="index.html">🔍 BUSCA</a>
+    <a href="favoritos.html" style="color:var(--accent)">⭐ FAVORITOS</a>
+</nav>
+
+<script>
+    // Carrega o índice para pegar os nomes/resumos baseados nos slugs favoritos
+    fetch('../data/index_busca.json')
+        .then(r => r.json())
+        .then(indice => {
+            const container = document.getElementById("lista-favoritos");
+            
+            // Pega todas as chaves do localStorage que começam com fav_
+            const favKeys = Object.keys(localStorage).filter(k => k.startsWith("fav_"));
+            const favSlugs = favKeys.map(k => k.replace("fav_", ""));
+
+            if (favSlugs.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <p style="font-size:3rem;">📖</p>
+                        <p>Ainda não marcou nenhum verbete como favorito.</p>
+                    </div>`;
+                return;
+            }
+
+            // Filtra o índice para mostrar apenas os favoritos
+            const lista = indice.filter(item => favSlugs.includes(item.s));
+
+            container.innerHTML = lista.map(v => `
+                <div class="item-fav" onclick="location.href='verbete.html#${v.s}'">
+                    <h3>${v.t}</h3>
+                    <p>${v.r}</p>
+                </div>
+            `).join("");
+        })
+        .catch(err => {
+            console.error("Erro ao carregar favoritos:", err);
+            document.getElementById("lista-favoritos").innerHTML = "Erro ao carregar dados.";
+        });
+</script>
+</body>
+</html>

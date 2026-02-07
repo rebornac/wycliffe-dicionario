@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wycliffe Pro</title>
+    <link rel="manifest" href="../manifest.json">
+    <meta name="theme-color" content="#1a2a3a">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=Merriweather:wght@700&display=swap" rel="stylesheet">
+    <style>
+        :root { --primary: #1a2a3a; --accent: #c0392b; --bg: #f4f7f6; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); margin: 0; padding: 20px; }
+        
+        /* Estilo do Splash */
+        #splash { 
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+            background: var(--primary); z-index: 9999; 
+            display: flex; flex-direction: column; align-items: center; justify-content: center; 
+            transition: opacity 0.5s ease;
+        }
+        .loader { width: 40px; height: 40px; border: 4px solid rgba(255,255,255,0.2); border-top-color: #fff; border-radius: 50%; animation: spin 1s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Resto dos estilos (Barra de busca, cards, etc) */
+        .container { max-width: 550px; margin: 0 auto; }
+        .search-box { background: white; padding: 15px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); display: flex; position: sticky; top: 10px; z-index: 100; }
+        input { width: 100%; border: none; font-size: 1.1rem; outline: none; }
+        #card-aleatorio { background: white; margin-top: 25px; padding: 25px; border-radius: 15px; border-left: 6px solid var(--accent); display: none; }
+        .nav-footer { position: fixed; bottom: 0; left: 0; width: 100%; background: white; display: flex; justify-content: space-around; padding: 18px 0; box-shadow: 0 -5px 20px rgba(0,0,0,0.05); border-radius: 20px 20px 0 0; }
+        .nav-footer a { text-decoration: none; color: #999; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div id="splash">
+    <h1 style="color:white; font-family:'Merriweather';">Wycliffe Pro</h1>
+    <div class="loader"></div>
+</div>
+
+<div class="container">
+    <header style="text-align:center; margin-bottom:30px;">
+        <h1>Wycliffe</h1>
+        <div id="contagem" style="font-size:0.7rem; color:#999;">A SINCRONIZAR...</div>
+    </header>
+
+    <div class="search-box">
+        <input id="inputBusca" placeholder="Pesquisar..." autocomplete="off">
+    </div>
+
+    <div id="card-aleatorio">
+        <small style="color:var(--accent); font-weight:bold;">SUGESTÃO DE ESTUDO</small>
+        <h2 id="rand-t"></h2>
+        <p id="rand-r"></p>
+        <button onclick="irAleatorio()" style="background:var(--primary); color:white; border:none; padding:10px 20px; border-radius:8px; cursor:pointer;">Ler mais</button>
+    </div>
+
+    <div id="resultados" style="margin-top:20px; padding-bottom:100px;"></div>
+</div>
+
+<nav class="nav-footer">
+    <a href="index.html" style="color:var(--accent)">🔍 BUSCA</a>
+    <a href="favoritos.html">⭐ FAVORITOS</a>
+</nav>
+
+<script>
+    // 1. Lógica Imediata do Splash
+    const splash = document.getElementById('splash');
+    // Se já mostramos o splash nesta sessão, removemos ele instantaneamente antes de o utilizador ver
+    if (sessionStorage.getItem('splashMostrado')) {
+        splash.style.display = 'none';
+    }
+
+    function fecharSplash() {
+        if (splash) {
+            splash.style.opacity = '0';
+            setTimeout(() => {
+                splash.style.display = 'none';
+                sessionStorage.setItem('splashMostrado', 'true');
+            }, 500);
+        }
+    }
+
+    // 2. Carregamento de Dados
+    fetch('../data/index_busca.json')
+        .then(r => r.json())
+        .then(data => {
+            const indice = data;
+            document.getElementById("contagem").innerText = `${indice.length} VERBETES`;
+            
+            // Sugestão Aleatória
+            const item = data[Math.floor(Math.random() * data.length)];
+            document.getElementById("rand-t").innerText = item.t;
+            document.getElementById("rand-r").innerText = item.r;
+            window.slugAleatorio = item.s;
+            document.getElementById("card-aleatorio").style.display = "block";
+
+            // Só fecha o splash após os dados carregarem
+            fecharSplash();
+
+            // Configurar a busca (usando o 'data' carregado)
+            configurarBusca(data);
+        })
+        .catch(err => {
+            console.error(err);
+            fecharSplash(); // Fecha mesmo com erro para não travar
+        });
+
+    function irAleatorio() { location.href = `verbete.html#${window.slugAleatorio}`; }
+
+    function configurarBusca(indice) {
+        document.getElementById("inputBusca").addEventListener("input", e => {
+            const termo = e.target.value.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+            const res = document.getElementById("resultados");
+            if(!termo) { res.innerHTML = ""; return; }
+            
+            const filtrados = indice.filter(v => v.t.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").includes(termo)).slice(0, 15);
+            res.innerHTML = filtrados.map(v => `
+                <div class="result-card" onclick="location.href='verbete.html#${v.s}'">
+                    <h3>${v.t}</h3>
+                    <p>${v.r}</p>
+                </div>
+            `).join("");
+        });
+    }
+
+    // Registro do SW
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('../sw.js');
+    }
+</script>
+</body>
+</html>

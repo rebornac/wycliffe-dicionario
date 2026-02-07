@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Leitura - Wycliffe Pro</title>
+    <link href="https://fonts.googleapis.com/css2?family=Merriweather:ital,wght@0,300;0,700&family=Inter:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root { --primary: #1a2a3a; --accent: #c0392b; --link: #2980b9; --bg: #f4f7f6; --card: #fff; --text: #2c3e50; }
+        body.sepia { --bg: #f4ecd8; --card: #fcf5e5; --text: #5b4636; --primary: #704214; }
+        body.dark { --bg: #121212; --card: #1e1e1e; --text: #e0e0e0; --link: #4dabf7; --primary: #ff6b6b; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); margin: 0; transition: 0.3s; padding: 15px; }
+        #progress-bar { position: fixed; top: 0; left: 0; height: 4px; background: var(--accent); width: 0%; z-index: 1002; }
+        .container { max-width: 650px; margin: 0 auto; padding-bottom: 100px; }
+        .toolbar { display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; background: var(--bg); padding: 10px 0; z-index: 10; border-bottom: 1px solid rgba(0,0,0,0.1); }
+        .btn-nav { background: var(--card); border: 1px solid #ddd; padding: 8px 12px; border-radius: 8px; cursor: pointer; color: var(--text); font-weight: bold; }
+        .card { background: var(--card); padding: 30px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); background-image: url('https://www.transparenttextures.com/patterns/paper.png'); }
+        h1 { font-family: 'Merriweather', serif; color: var(--primary); border-bottom: 2px solid var(--accent); padding-bottom: 10px; margin-top: 0; }
+        .definicao { font-family: 'Merriweather', serif; font-size: 1.15rem; text-align: justify; line-height: 1.8; }
+        .link-biblia { color: var(--link); font-weight: 700; cursor: pointer; border-bottom: 1px solid var(--link); background: rgba(41, 128, 185, 0.1); padding: 0 4px; border-radius: 3px; }
+        .action-bar { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: var(--primary); color: white; display: flex; gap: 20px; padding: 12px 25px; border-radius: 30px; box-shadow: 0 5px 20px rgba(0,0,0,0.3); z-index: 100; font-weight: bold; }
+        #modal-biblia { position: fixed; bottom: -100%; left: 0; width: 100%; background: var(--card); border-top: 6px solid var(--link); padding: 25px; box-sizing: border-box; z-index: 1001; border-radius: 25px 25px 0 0; max-height: 75vh; overflow-y: auto; transition: 0.4s; color: var(--text); }
+        #modal-biblia.open { bottom: 0; }
+        .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: none; z-index: 1000; backdrop-filter: blur(2px); }
+        sup { color: var(--accent); font-weight: bold; margin-right: 5px; }
+    </style>
+</head>
+<body class="sepia">
+
+<div id="progress-bar"></div>
+
+<div class="container">
+    <div class="toolbar">
+        <button class="btn-nav" onclick="location.href='index.html'">🔍</button>
+        <div style="display:flex; gap:8px;">
+            <div onclick="setT('white')" style="width:20px; height:20px; border-radius:50%; background:#fff; border:1px solid #ccc; cursor:pointer;"></div>
+            <div onclick="setT('sepia')" style="width:20px; height:20px; border-radius:50%; background:#f4ecd8; border:1px solid #ccc; cursor:pointer;"></div>
+            <div onclick="setT('dark')" style="width:20px; height:20px; border-radius:50%; background:#222; border:1px solid #ccc; cursor:pointer;"></div>
+        </div>
+        <button id="btnF" class="btn-nav" onclick="toggleF()">☆</button>
+    </div>
+    
+    <article id="conteudo" class="card"></article>
+</div>
+
+<div class="action-bar">
+    <div onclick="copiar()">📋 COPIAR</div>
+    <div onclick="partilhar()">📤 PARTILHAR</div>
+</div>
+
+<div class="overlay" id="overlay" onclick="closeM()"></div>
+<div id="modal-biblia">
+    <span onclick="closeM()" style="float:right; cursor:pointer; font-size:28px; color:#999;">&times;</span>
+    <h3 id="m-ref" style="color:var(--link); margin-top:0; font-family:'Merriweather';"></h3>
+    <div id="m-txt" style="margin-top:15px; border-top:1px solid #eee; padding-top:15px;"></div>
+</div>
+
+<script>
+    let biblia = null, vAtual = null;
+    const aliases = { "nicas": "1Cr", "Reis": "1Rs", "Sm": "1Sm", "Rs": "1Rs", "Cr": "1Cr" };
+
+    function setT(m) { document.body.className = m; localStorage.setItem('theme', m); }
+    if(localStorage.getItem('theme')) setT(localStorage.getItem('theme'));
+
+    window.onscroll = () => {
+        let h = document.documentElement;
+        let st = h.scrollTop || document.body.scrollTop;
+        let sh = h.scrollHeight || document.body.scrollHeight;
+        document.getElementById("progress-bar").style.width = (st / (sh - h.clientHeight) * 100) + "%";
+    };
+
+    async function load() {
+        const slug = location.hash.slice(1);
+        if(!slug) return;
+        let L = slug[0].toUpperCase();
+        
+        // Caminho corrigido para sair de /app e entrar em /data
+        const r = await fetch(`../data/dicionario_${isNaN(L)?L:'0-9'}.json`);
+        const data = await r.json();
+        vAtual = data.find(i => i.slug === slug);
+        
+        if(vAtual) {
+            const regex = /\b((?:\d\s*)?[A-Z][a-záéíóúç]{1,4}|nicas|Reis|Sm|Rs|Cr)\s+(\d+)[.:](\d+(?:[-–]\d+)?(?:,\s*\d+)*)/g;
+            let html = vAtual.definicao.replace(regex, (m, livro, cap, vers) => {
+                let sigla = aliases[livro.replace(/\s+/g, '')] || livro.replace(/\s+/g, '');
+                return `<span class="link-biblia" onclick="openM('${sigla}',${cap},'${vers}')">${m}</span>`;
+            });
+            document.getElementById("conteudo").innerHTML = `<h1>${vAtual.termo}</h1><div class="definicao">${html}</div>`;
+            document.getElementById("btnF").innerText = localStorage.getItem("fav_"+vAtual.slug) ? "⭐" : "☆";
+        }
+    }
+
+    async function openM(s, c, vStr) {
+        document.getElementById("m-ref").innerText = `${s} ${c}:${vStr}`;
+        document.getElementById("m-txt").innerHTML = "A carregar Bíblia...";
+        document.getElementById("modal-biblia").classList.add("open");
+        document.getElementById("overlay").style.display = "block";
+        
+        // Caminho da Bíblia corrigido
+        if(!biblia) biblia = await (await fetch("../data/biblia_acf.json")).json();
+        
+        let out = "";
+        vStr.split(",").forEach(p => {
+            if(p.includes("-") || p.includes("–")) {
+                let range = p.split(/[-–]/);
+                for(let i=parseInt(range[0]); i<=parseInt(range[1]); i++) {
+                    let t = biblia[s]?.[c]?.[i];
+                    if(t) out += `<p><sup>${i}</sup> ${t}</p>`;
+                }
+            } else {
+                let i = parseInt(p.trim());
+                let t = biblia[s]?.[c]?.[i];
+                if(t) out += `<p><sup>${i}</sup> ${t}</p>`;
+            }
+        });
+        document.getElementById("m-txt").innerHTML = out || "Versículo não localizado.";
+    }
+
+    function closeM() { document.getElementById("modal-biblia").classList.remove("open"); document.getElementById("overlay").style.display = "none"; }
+    function toggleF() {
+        const key = "fav_"+vAtual.slug;
+        localStorage.getItem(key) ? localStorage.removeItem(key) : localStorage.setItem(key, "true");
+        document.getElementById("btnF").innerText = localStorage.getItem(key) ? "⭐" : "☆";
+    }
+    function copiar() { navigator.clipboard.writeText(`${vAtual.termo}\n\n${vAtual.definicao}\n\nFonte: Wycliffe Pro`); alert("Copiado!"); }
+    function partilhar() { if(navigator.share) navigator.share({ title: vAtual.termo, url: location.href }); }
+
+    window.onhashchange = load; load();
+</script>
+</body>
+</html>
